@@ -7,10 +7,8 @@ class Base:
         Initialize the Base class.
         """
         logging.info("Base.__init__")
-        # self.URLS = Base.get_data()
-        self.URLS = [
-            "https://www.google.com",
-              "https://taha.software"]
+        self.URLS = Base.get_data()[:100]
+
 
     @staticmethod
     def get_data(src="../dataset/dataset.json") -> str:
