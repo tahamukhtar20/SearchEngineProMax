@@ -7,7 +7,7 @@ class Base:
         Initialize the Base class.
         """
         logging.info("Base.__init__")
-        self.URLS = Base.get_data()[:100]
+        self.URLS = Base.get_data()
         self.TITLES_TO_SKIP = Base.get_titles_to_skip()
 
 

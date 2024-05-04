@@ -13,7 +13,7 @@ class Crawler(Base):
         """
         logging.info("Crawler.__init__")
         super().__init__()
-        self.concurrent_requests = 1
+        self.concurrent_requests = 30
         self.completed_tasks = 0
         self.semaphore = asyncio.Semaphore(self.concurrent_requests)
         self.browser = None
@@ -44,13 +44,18 @@ class Crawler(Base):
             logging.info("Crawler.crawl")
             logging.info(f"Crawling {url}...")
             html = None
+            page = None
             try:
                 page = await self.browser.newPage()
                 await pyppeteer_stealth.stealth(page)
                 await page.goto(url)
                 html = await page.content()
             except Exception as e:
+                logging.info(f"{url} could not be crawled.")
                 logging.error(f"Error: {e}")
+                if e == "Connection is closed":
+                    logging.info("Reconnecting...")
+                    html = await self.reconnect_and_crawl(url)
             finally:
                 if page:
                     await page.close()
@@ -77,6 +82,26 @@ class Crawler(Base):
         keywords = keywords["content"] if keywords else ""
         content_tags = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "a", "li", "td", "th"]
         content = {tag: [item.text for item in soup.find_all(tag)] for tag in content_tags}
+        forward_links = [link["href"] for link in soup.find_all("a", href=True)]
         if (title in titles_to_skip) or (any([str(i) in title.split(" ") for i in range(400, 600)])):
             return None
-        return {"title": title, "description": description, "keywords": keywords, "content": content}
+        return {"title": title, "description": description, "keywords": keywords, "content": content, "forward_links": forward_links}
+
+
+    async def reconnect_and_crawl(self, url):
+        """
+        Reconnect the browser instance and continue crawling.
+        """
+        try:
+            if self.browser:
+                await self.browser.disconnect()
+                await self.browser.close()
+            self.browser = await pyppeteer.launch(headless=True)
+            page = await self.browser.newPage()
+            await pyppeteer_stealth.stealth(page)
+            await page.goto(url)
+            html = await page.content()
+            logging.info("Reconnection successful. Continuing crawling.")
+            return html
+        except Exception as e:
+            logging.error(f"Error reconnecting and crawling: {e}")
