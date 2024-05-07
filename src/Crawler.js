@@ -4,7 +4,7 @@ const { writeFile, write } = require("fs");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const { Semaphore } = require("await-semaphore");
 
-const Base = require("./Base");
+const { Base } = require("./Base");
 
 class Crawler extends Base {
   constructor() {
