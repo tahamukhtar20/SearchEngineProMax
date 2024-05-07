@@ -1,4 +1,5 @@
 const Base = require("./Base");
+const { md5 } = require("js-md5");
 
 class BloomFilter extends Base {
   constructor() {
@@ -9,7 +10,14 @@ class BloomFilter extends Base {
       this.array_size,
       this.urls.length
     );
-    this.bit_array = new Array(this.array_size).fill((value = 0));
+    this.bit_array = new Array(this.array_size).fill(0);
+    this.create_filter();
+  }
+
+  create_filter(url = "google.com") {
+    console.log("BloomFilter.create_filter");
+    var hash = md5.digest(url);
+    console.log("hash: ", hash);
   }
 
   get_hash_count(array_size, item_count) {
@@ -22,3 +30,5 @@ class BloomFilter extends Base {
     );
   }
 }
+
+module.exports = BloomFilter;
