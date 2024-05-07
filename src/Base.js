@@ -9,12 +9,12 @@ class Base {
 
   static getData() {
     console.log("Base.getData");
-    return JSON.parse(readFileSync("../dataset/dataset.json", "utf8"));
+    return JSON.parse(readFileSync("dataset/dataset.json", "utf8"));
   }
 
   static getTitlesToSkip() {
     console.log("Base.getTitlesToSkip");
-    return JSON.parse(readFileSync("../dataset/titlesToSkip.json", "utf8"));
+    return JSON.parse(readFileSync("dataset/titlesToSkip.json", "utf8"));
   }
 }
 
