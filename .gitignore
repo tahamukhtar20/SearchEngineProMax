@@ -6,3 +6,5 @@ output/
 
 # ignore node modules anywhere in the project
 node_modules/
+
+__pycache__/
