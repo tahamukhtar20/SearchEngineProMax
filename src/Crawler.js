@@ -8,7 +8,7 @@ const tokenizer = new natural.WordTokenizer();
 const stopWords = require("stopwords").english;
 const stemmer = natural.PorterStemmer;
 
-const Base = require("./Base");
+const { Base } = require("./Base");
 
 class Crawler extends Base {
   constructor() {

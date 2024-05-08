@@ -1,5 +1,12 @@
 const { readFileSync } = require("fs");
 
+// Styling Convention
+var console_styles = {
+  Reset: "\x1b[0m",
+  Heading: "\x1b[1m\x1b[32m",
+  Url: "\x1b[2m",
+};
+
 class Base {
   constructor() {
     console.log("Base.contructor");
@@ -17,5 +24,7 @@ class Base {
     return JSON.parse(readFileSync("../dataset/titlesToSkip.json", "utf8"));
   }
 }
-
-module.exports = Base;
+module.exports = {
+  Base,
+  console_styles,
+};
