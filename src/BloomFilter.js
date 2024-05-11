@@ -1,6 +1,8 @@
 const { Base, styles } = require("./Base");
 const { BitArray } = require("./Utils/bitArray");
-const { md5 } = require("js-md5");
+var murmur = require("murmurhash-js");
+
+var fs = require("fs");
 
 class BloomFilter extends Base {
   #false_positivity_rate;
@@ -27,28 +29,64 @@ class BloomFilter extends Base {
     this.#hash_functions = [this.hash1, this.hash2];
     this.#hash_functions_count = this.#hash_functions.length;
 
-    this.bit_array = new BitArray(this.array_size);
+    this.bit_arr = new BitArray(this.array_size);
 
     this.construct_filter();
   }
 
   construct_filter(urls = this.urls) {
     console.log(`${styles.head}BloomFilter.construct_filter${styles.res}`);
+
+    // check if the filter is already constructed
+    let filter_path = `dataset/filter.txt`;
+    if (fs.existsSync(filter_path)) {
+      console.log("Filter already exists");
+      this.read_filter_from_txt();
+
+      console.log("bit_array: ", this.bit_arr.return_bit_array());
+      return;
+    }
+
     urls.forEach((url) => {
       this.hash_url_to_bit_array(url);
     });
-    console.log("bit_array: ", this.bit_array.return_bit_array());
+    console.log("bit_array: ", this.bit_arr.return_bit_array());
     console.log(`${styles.head}Bloom Filter Constructed${styles.res}`);
+
+    this.save_filter_to_txt();
+  }
+
+  read_filter_from_txt() {
+    console.log(`${styles.head}BloomFilter.read_filter${styles.res}`);
+    // read the filter array from a text document
+    let path = `dataset/filter.txt`;
+    let data = fs.readFileSync(path);
+    let data_arr = data.toString().split(",");
+
+    data_arr.forEach((byteInt, idx) => {
+      this.bit_arr.bit_array[idx] = byteInt;
+    });
+  }
+
+  save_filter_to_txt() {
+    console.log(`${styles.head}BloomFilter.save_filter${styles.res}`);
+    // save the filter array to a text document
+    let path = `dataset/filter.txt`;
+    fs.writeFile(path, this.bit_arr.return_array_values(), (err) => {
+      if (err) {
+        console.log(err);
+      }
+    });
   }
 
   hash_url_to_bit_array(url, hash_functions = this.#hash_functions) {
     for (let i = 0; i < 2; i++) {
-      this.bit_array.set_bit(hash_functions[i](url, this.array_size));
+      this.bit_arr.set_bit(hash_functions[i](url, this.array_size));
     }
   }
 
   check_url_in_bit_array(url, hash_function) {
-    return this.bit_array.get_bit(hash_function(url, this.array_size));
+    return this.bit_arr.get_bit(hash_function(url, this.array_size));
   }
 
   check_filter(url) {
@@ -75,10 +113,10 @@ class BloomFilter extends Base {
   }
 
   hash1(url, arr_size) {
-    return Number(md5.digest(url).join("")) % arr_size;
+    return Math.ceil(Number(murmur.murmur3(url, 0)) % arr_size);
   }
   hash2(url, arr_size) {
-    return Number(md5.digest(url).join("")) ** 2 % arr_size;
+    return Math.ceil(Number(murmur.murmur2(url, 0)) % arr_size);
   }
 }
 

@@ -10,7 +10,19 @@ class BitArray {
     );
     this.bit_array = new Uint8Array(this.#index_range).fill(0);
   }
+  return_array_values() {
+    return this.bit_array.toString();
+  }
   return_bit_array() {
+    // let string_array = "";
+    // for (let i = 0; i < this.bit_array_length; i++) {
+    //   if (i % 8 === 0 && i !== 0) {
+    //     string_array += " ";
+    //   }
+    //   string_array += `${this.get_bit(i)}`;
+    // }
+    // console.log();
+    // return string_array;
     let string_array = "";
     for (let i = 0; i < this.bit_array_length; i++) {
       string_array += `${this.get_bit(i)}`;
