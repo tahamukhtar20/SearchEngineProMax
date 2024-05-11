@@ -21,7 +21,6 @@ class InvertedIndex:
                 self.index[val][doc["url"]] = 1
 
 
-    
     def index_docs(self):
         for file in os.listdir(self.documents_path):
             with open(os.path.join(self.documents_path, file), "r") as file:
@@ -29,4 +28,3 @@ class InvertedIndex:
         for key in self.index:
             self.index[key] = OrderedDict(sorted(self.index[key].items(), key=lambda x: x[1], reverse=True))
         return self.index
-        

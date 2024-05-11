@@ -18,6 +18,7 @@ class Crawler extends Base {
     this.completedTasks = 0;
     this.allTasks = 0;
     this.failedTasks = 0;
+    this.forwardLinksBuffer = new Set();
     this.semaphore = new Semaphore(this.concurrentRequests);
     this.browser = null;
   }
@@ -25,25 +26,29 @@ class Crawler extends Base {
   async start() {
     console.log("Crawler.start");
     puppeteer.use(StealthPlugin());
-    const urls = this.urls;
-    const chunkSize = 150;
-    const chunks = [];
-    for (let i = 0; i < urls.length; i += chunkSize) {
-      chunks.push(urls.slice(i, i + chunkSize));
-    }
-    for (let i = 0; i < chunks.length; i++) {
-      if (this.browser) {
-        await new Promise((resolve) => setTimeout(resolve, 61000));
-        this.browser.close();
-        console.log("Crawled Page Count: ", this.completedTasks);
-        console.log("Failed Page Count: ", this.failedTasks);
-        console.log("Total Page Count: ", this.allTasks);
-        console.log("Crawler.start: Chunk ", i + 1, " of ", chunks.length);
+    while (this.urls.length > 0) {
+      const urls = this.urls;
+      const chunkSize = 150;
+      const chunks = [];
+      for (let i = 0; i < urls.length; i += chunkSize) {
+        chunks.push(urls.slice(i, i + chunkSize));
       }
-      const currChunk = chunks[i];
-      this.browser = await puppeteer.launch({ headless: true });
-      await Promise.all(currChunk.map((url) => this.crawl(url)));
+      for (let i = 0; i < chunks.length; i++) {
+        if (this.browser) {
+          await new Promise((resolve) => setTimeout(resolve, 61000));
+          this.browser.close();
+          console.log("Crawled Page Count: ", this.completedTasks);
+          console.log("Failed Page Count: ", this.failedTasks);
+          console.log("Total Page Count: ", this.allTasks);
+          console.log("Crawler.start: Chunk ", i + 1, " of ", chunks.length);
+        }
+        const currChunk = chunks[i];
+        this.browser = await puppeteer.launch({ headless: true });
+        await Promise.all(currChunk.map((url) => this.crawl(url)));
+      }
+      this.requestData();
     }
+
     await this.browser.close();
   }
 
@@ -55,6 +60,20 @@ class Crawler extends Base {
       try {
         console.log("Crawler.crawl");
         page = await this.browser.newPage();
+        await page.setRequestInterception(true);
+        page.on("request", (request) => {
+          if (request.isInterceptResolutionHandled()) return;
+          switch (request.resourceType()) {
+            case "image":
+            case "media":
+            case "stylesheet":
+            case "font":
+              request.abort();
+              break;
+            default:
+              request.continue();
+          }
+        });
         await page.goto(url, { timeout: 60000 });
         await page.waitForSelector("body");
         content = await page.content();
@@ -94,37 +113,56 @@ class Crawler extends Base {
     });
   }
 
+  sanitizeContent(content) {
+    console.log("Crawler.sanitize");
+    content = content.replace(
+      /<(style|noscript|svg|iframe|form|input|button|select|textarea|canvas|audio|video|map|area|track|source)\b[^>]*>.*?<\/\1>/g,
+      ""
+    );
+    content = content.replace(
+      /<(h1|h2|p|h3|h4|h5|h6|a|li|td|th)[^>]*>(.*?)<\/\1>/g,
+      function (_match, tag, innerContent) {
+        innerContent = innerContent.replace(/<[^>]*>/g, " ");
+        return "<" + tag + ">" + innerContent + "</" + tag + ">";
+      }
+    );
+    return content;
+  }
+
   async parseContent(content, url) {
     console.log("Crawler.parse");
-    const $ = load(content);
-    const title = $("title").text() || "";
+    const sanitizedContent = this.sanitizeContent(content);
+    const $ = load(sanitizedContent);
+    const lang = $("html").attr("lang");
+    if (lang && lang !== "en") return;
+    const title = $("title").text() || "Untitled Page";
     const description = $('meta[name="description"]').attr("content") || "";
     const keywords = $('meta[name="keywords"]').attr("content") || "";
     const headingEls = ["h1", "h2"];
     const contentMineEls = ["p", "h3", "h4", "h5", "h6", "a", "li", "td", "th"];
     const contentData = {};
-    const preview = description ? description : $("body").text().slice(0, 500);
+    const preview = description ? description : "No preview available";
     const forwardLinks = new Set();
     contentData["doc"] = [];
     contentData["headings"] = [];
     contentData["headings"].push(title);
     contentData["headings"].push(description);
     contentData["headings"].push(keywords);
+
     contentMineEls.forEach((el) => {
       $(el).each((_, element) => {
         const text = $(element).text();
-        contentData["doc"].add(text);
-        contentData["doc"];
+        contentData["doc"].push(text);
       });
     });
     headingEls.forEach((el) => {
       $(el).each((_, element) => {
         const text = $(element).text();
-        contentData["headings"].add(text);
+        contentData["headings"].push(text);
       });
     });
-    contentData["doc"] = Crawler.processTextArray(contentData["doc"]);
-    contentData["headings"] = Crawler.processTextArray(contentData["headings"]);
+    contentData["doc"] = this.processTextArray(contentData["doc"]);
+    contentData["headings"] = this.processTextArray(contentData["headings"]);
     const currUrl = new URL(url);
     $("a").each((_, element) => {
       const href = $(element).attr("href");
@@ -145,6 +183,11 @@ class Crawler extends Base {
             return;
           const baseLink = url.protocol + "//" + url.hostname;
           forwardLinks.add(baseLink);
+          if (this.forwardLinksBuffer.size >= 1000) {
+            this.writeForwardLinksBuffer();
+            this.forwardLinksBuffer.clear();
+          }
+          this.forwardLinksBuffer.add(baseLink);
         } catch (error) {
           if (error instanceof TypeError) {
             return;
@@ -156,7 +199,8 @@ class Crawler extends Base {
     });
 
     return {
-      content: contentData,
+      doc: contentData["doc"],
+      headings: contentData["headings"],
       url: url,
       previewTitle: title,
       preview: preview,
@@ -164,13 +208,26 @@ class Crawler extends Base {
     };
   }
 
-  static processTextArray(textArray) {
+  processTextArray(textArray) {
     const text = (textArray.flat().join(" ") || "").replace(/\s+/g, " ");
     const textLower = text.toLowerCase();
-    const textWithoutPunctuation = textLower.replace(/[^\w\s]/g, "");
+    const textWithoutPunctuation = textLower.replace(/[^\w\s]/g, " ");
     const tokens = tokenizer.tokenize(textWithoutPunctuation);
     const filteredTokens = tokens.filter((token) => !stopWords.includes(token));
-    return filteredTokens.map((token) => stemmer.stem(token));
+    const lenFilteredTokens = filteredTokens.filter(
+      (token) => token.length >= 2 && token.length <= 32
+    );
+    const lemmitizeTokens = this.lemmitizeTokens(lenFilteredTokens);
+    return lemmitizeTokens.map((token) => stemmer.stem(token));
+  }
+
+  lemmitizeTokens(tokens) {
+    return tokens.map((token) => {
+      if (this.lemmatizeMap[token]) {
+        return this.lemmatizeMap[token];
+      }
+      return token;
+    });
   }
 
   async saveContent(content) {
@@ -196,6 +253,19 @@ class Crawler extends Base {
         console.error(errorWrite);
       }
     });
+  }
+
+  writeForwardLinksBuffer() {
+    console.log("Crawler.writeForwardLinksBuffer");
+    writeFile(
+      `../dataset/splitupDataset/dataset_${++this.maxIndex}.json`,
+      JSON.stringify(Array.from(this.forwardLinksBuffer)),
+      (error) => {
+        if (error) {
+          console.error(error);
+        }
+      }
+    );
   }
 }
 
