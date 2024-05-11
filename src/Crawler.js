@@ -170,6 +170,8 @@ class Crawler extends Base {
         try {
           const url = new URL(href);
           if (
+            !href.startsWith("http") ||
+            !href.startsWith("https") ||
             href.startsWith("#") ||
             href.startsWith("javascript:") ||
             href.startsWith("mailto:") ||
