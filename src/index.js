@@ -1,4 +1,4 @@
 const Crawler = require("./Crawler");
+const BloomFilter = require("./BloomFilter");
 
-const crawler = new Crawler();
-crawler.start();
+const bFilter = new BloomFilter();
