@@ -14,9 +14,13 @@
     "cheerio": "^1.0.0-rc.12",
     "murmurhash-js": "^1.0.0",
     "natural": "^7.0.5",
+    "node-dir": "^0.1.17",
+    "path": "^0.12.7",
+    "puppeteer": "^22.8.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "semaphore-async-await": "^1.5.1",
-    "stopwords": "^0.0.9"
+    "stopwords": "^0.0.9",
+    "util": "^0.12.5"
   }
 }

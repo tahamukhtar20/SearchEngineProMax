@@ -1,4 +1,5 @@
 import search_engine
+import inverted_index
 
 if __name__ == "__main__":
-    print(search_engine.SearchEngine().search("hello"))
+    inverted_index.InvertedIndex().index_docs()
