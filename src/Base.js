@@ -1,10 +1,10 @@
 const { readFileSync, readdirSync } = require("fs");
 
 // Styling Convention
-var console_styles = {
-  Reset: "\x1b[0m",
-  Heading: "\x1b[1m\x1b[32m",
-  Url: "\x1b[2m",
+var styles = {
+  res: "\x1b[0m",
+  head: "\x1b[1m\x1b[32m",
+  url: "\x1b[2m",
 };
 
 class Base {
@@ -20,7 +20,7 @@ class Base {
   lastDatasetIndex() {
     console.log("Base.lastDatasetIndex");
     let maxIndex = 0;
-    const files = readdirSync("../dataset/splitupDataset");
+    const files = readdirSync("dataset/splitupDataset");
     files.forEach((file) => {
       const index = parseInt(file.split("_")[1].split(".")[0]);
       if (index > maxIndex) {
@@ -32,12 +32,12 @@ class Base {
 
   static getLemmatizeMap() {
     console.log("Base.getLemmatizeMap");
-    return JSON.parse(readFileSync("../dataset/lemmatizedMap.json", "utf8"));
+    return JSON.parse(readFileSync("dataset/lemmatizedMap.json", "utf8"));
   }
 
   static getTitlesToSkip() {
     console.log("Base.getTitlesToSkip");
-    return JSON.parse(readFileSync("../dataset/titlesToSkip.json", "utf8"));
+    return JSON.parse(readFileSync("dataset/titlesToSkip.json", "utf8"));
   }
 
   requestData() {
@@ -45,10 +45,7 @@ class Base {
     const currIndex = Base.dataCount;
     try {
       const datasetSlice = JSON.parse(
-        readFileSync(
-          `../dataset/splitupDataset/dataset_${currIndex}.json`,
-          "utf8"
-        )
+        readFileSync(`dataset/splitupDataset/dataset_${currIndex}.json`, "utf8")
       );
       Base.dataCount++;
       return datasetSlice;
@@ -61,5 +58,5 @@ class Base {
 }
 module.exports = {
   Base,
-  console_styles,
+  styles,
 };
