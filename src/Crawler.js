@@ -9,6 +9,7 @@ const stopWords = require("stopwords").english;
 const stemmer = natural.PorterStemmer;
 
 const { Base } = require("./Base");
+const { TimeoutError } = require("puppeteer");
 
 class Crawler extends Base {
   constructor() {
@@ -43,7 +44,9 @@ class Crawler extends Base {
           console.log("Crawler.start: Chunk ", i + 1, " of ", chunks.length);
         }
         const currChunk = chunks[i];
-        this.browser = await puppeteer.launch({ headless: true });
+        this.browser = await puppeteer.launch({
+          headless: true
+        });
         await Promise.all(currChunk.map((url) => this.crawl(url)));
       }
       this.requestData();
@@ -56,76 +59,54 @@ class Crawler extends Base {
     this.allTasks++;
     let page = null;
     let content = null;
-    await this.semaphore.acquire().then(async (release) => {
+
+    await Crawler.semaphoreHandling(this.semaphore, async () => {
       try {
         console.log("Crawler.crawl");
+        const resourceTypesToSkip = ["image", "media", "stylesheet", "font"];
+
         page = await this.browser.newPage();
         await page.setRequestInterception(true);
         page.on("request", (request) => {
           if (request.isInterceptResolutionHandled()) return;
-          switch (request.resourceType()) {
-            case "image":
-            case "media":
-            case "stylesheet":
-            case "font":
-              request.abort();
-              break;
-            default:
-              request.continue();
-          }
+          if (resourceTypesToSkip.includes(request.resourceType())) request.abort();
+          else request.continue();
         });
         await page.goto(url, { timeout: 60000 });
         await page.waitForSelector("body");
+
         content = await page.content();
-      } catch (error) {
-        if (error.name === "TimeoutError") {
-          this.failedTasks++;
-          console.error("TimeoutError: ", url);
-        } else {
-          Crawler.logError(error, url);
-        }
-      } finally {
-        if (page) {
-          await page.close();
-        }
-      }
-      try {
-        if (content) {
-          if (this.titlesToSkip.some((title) => content.includes(title))) {
-            this.failedTasks++;
-            console.error("Captcha Found: ", url);
-            return;
-          }
-          const parsedContent = await this.parseContent(content, url);
-          if (parsedContent) {
-            this.completedTasks++;
-            this.saveContent(parsedContent);
-            console.log("Crawled Page Count: ", this.completedTasks);
-            console.log("Crawled Page: ", url);
-          }
-        }
+
+        if (!content) throw new Error("ContentError");
+        if (this.titlesToSkip.some((title) => content.includes(title))) throw new Error("CaptchaError");
+
+        const parsedContent = await this.parseContent(content, url);
+        if (!parsedContent) throw new Error("ContentError");
+
+        this.completedTasks++;
+        this.saveContent(parsedContent);
+
+        console.log("Crawled Page Count: ", this.completedTasks);
+        console.log("Crawled Page: ", url);
       } catch (error) {
         this.failedTasks++;
-        console.error("Error while parsing content", error);
+        if (error instanceof TimeoutError) console.error("TimeoutError: ", url, "\n Failed Page Count: ", this.failedTasks);
+        if (error.message === "CaptchaError") console.error("CaptchaError: ", url);
+        if (error.message === "ContentError") console.error("ContentError: ", url);
+        else Crawler.logErrorFile(error, url);
       } finally {
-        release();
+        if (page) await page.close();
       }
     });
   }
 
   sanitizeContent(content) {
     console.log("Crawler.sanitize");
-    content = content.replace(
-      /<(style|noscript|svg|iframe|form|input|button|select|textarea|canvas|audio|video|map|area|track|source)\b[^>]*>.*?<\/\1>/g,
-      ""
-    );
-    content = content.replace(
-      /<(h1|h2|p|h3|h4|h5|h6|a|li|td|th)[^>]*>(.*?)<\/\1>/g,
-      function (_match, tag, innerContent) {
-        innerContent = innerContent.replace(/<[^>]*>/g, " ");
-        return "<" + tag + ">" + innerContent + "</" + tag + ">";
-      }
-    );
+    content = content.replace(/<(style|noscript|svg|iframe|form|input|button|select|textarea|canvas|audio|video|map|area|track|source)\b[^>]*>.*?<\/\1>/g, "");
+    content = content.replace(/<(h1|h2|p|h3|h4|h5|h6|a|li|td|th)[^>]*>(.*?)<\/\1>/g, function (_match, tag, innerContent) {
+      innerContent = innerContent.replace(/<[^>]*>/g, " ");
+      return "<" + tag + ">" + innerContent + "</" + tag + ">";
+    });
     return content;
   }
 
@@ -150,53 +131,33 @@ class Crawler extends Base {
     contentData["headings"].push(keywords);
 
     contentMineEls.forEach((el) => {
-      $(el).each((_, element) => {
-        const text = $(element).text();
-        contentData["doc"].push(text);
-      });
+      Crawler.textMining(el, $, contentData["doc"]);
     });
     headingEls.forEach((el) => {
-      $(el).each((_, element) => {
-        const text = $(element).text();
-        contentData["headings"].push(text);
-      });
+      Crawler.textMining(el, $, contentData["headings"]);
     });
+
     contentData["doc"] = this.processTextArray(contentData["doc"]);
     contentData["headings"] = this.processTextArray(contentData["headings"]);
     const currUrl = new URL(url);
-    $("a").each((_, element) => {
+    $("a").each(async (_, element) => {
       const href = $(element).attr("href");
-      if (href) {
-        try {
-          const url = new URL(href);
-          if (
-            !href.startsWith("http") ||
-            !href.startsWith("https") ||
-            href.startsWith("#") ||
-            href.startsWith("javascript:") ||
-            href.startsWith("mailto:") ||
-            href.startsWith("tel:") ||
-            href.startsWith("/") ||
-            url.hostname === currUrl.hostname ||
-            url.hostname === "www." + currUrl.hostname ||
-            url.hostname === "http://" + currUrl.hostname ||
-            url.hostname === "https://" + currUrl.hostname
-          )
-            return;
-          const baseLink = url.protocol + "//" + url.hostname;
-          forwardLinks.add(baseLink);
-          if (this.forwardLinksBuffer.size >= 1000) {
-            this.writeForwardLinksBuffer();
-            this.forwardLinksBuffer.clear();
-          }
-          this.forwardLinksBuffer.add(baseLink);
-        } catch (error) {
-          if (error instanceof TypeError) {
-            return;
-          } else {
-            Crawler.logError(error, url);
-          }
-        }
+      if (!href) return true;
+      try {
+        const url = new URL(href);
+        if (!href.startsWith("http") || !href.startsWith("https") || href.startsWith("#") || href.startsWith("javascript:") || href.startsWith("mailto:") || href.startsWith("tel:") || href.startsWith("/") || url.hostname === currUrl.hostname || url.hostname === "www." + currUrl.hostname || url.hostname === "http://" + currUrl.hostname || url.hostname === "https://" + currUrl.hostname) return;
+        const baseLink = url.protocol + "//" + url.hostname;
+        forwardLinks.add(baseLink);
+        const semaphore = new Semaphore(1);
+        await Crawler.semaphoreHandling(semaphore, async () => {
+          if (this.forwardLinksBuffer.size < 900) return;
+          this.writeForwardLinksBuffer();
+          this.forwardLinksBuffer.clear();
+        });
+        this.forwardLinksBuffer.add(baseLink);
+      } catch (error) {
+        if (error instanceof TypeError) return;
+        else Crawler.logErrorFile(error, url);
       }
     });
 
@@ -206,7 +167,7 @@ class Crawler extends Base {
       url: url,
       previewTitle: title,
       preview: preview,
-      forwardLinks: forwardLinks.size > 0 ? Array.from(forwardLinks) : [],
+      forwardLinks: forwardLinks.size > 0 ? Array.from(forwardLinks) : []
     };
   }
 
@@ -216,58 +177,59 @@ class Crawler extends Base {
     const textWithoutPunctuation = textLower.replace(/[^\w\s]/g, " ");
     const tokens = tokenizer.tokenize(textWithoutPunctuation);
     const filteredTokens = tokens.filter((token) => !stopWords.includes(token));
-    const lenFilteredTokens = filteredTokens.filter(
-      (token) => token.length >= 2 && token.length <= 32
-    );
+    const lenFilteredTokens = filteredTokens.filter((token) => token.length >= 2 && token.length <= 32);
     const lemmitizeTokens = this.lemmitizeTokens(lenFilteredTokens);
     return lemmitizeTokens.map((token) => stemmer.stem(token));
   }
 
   lemmitizeTokens(tokens) {
-    return tokens.map((token) => {
-      if (this.lemmatizeMap[token]) {
-        return this.lemmatizeMap[token];
-      }
-      return token;
-    });
+    return tokens.map((token) => (this.lemmatizeMap[token] ? this.lemmatizeMap[token] : token));
   }
 
   async saveContent(content) {
     console.log("Crawler.save");
     const fileName = `../output/${this.completedTasks}.json`;
-    writeFile(fileName, JSON.stringify(content), (error) => {
-      if (error) {
-        console.error(error);
-      }
-    });
-  }
-
-  static logError(error, url = "") {
-    const logFile = `../logs/${Date.now()}-${url
-      .replace(/(^\w+:|^)\/\//, "")
-      .replace(/\//g, "-")}.log`;
-    console.error(
-      "Some Error Occurred, please check logs for more details: ",
-      logFile
-    );
-    writeFile(logFile, String(error), (errorWrite) => {
-      if (errorWrite) {
-        console.error(errorWrite);
-      }
-    });
+    const stringContent = JSON.stringify(content);
+    writeFile(fileName, stringContent, Crawler.logError);
   }
 
   writeForwardLinksBuffer() {
     console.log("Crawler.writeForwardLinksBuffer");
-    writeFile(
-      `../dataset/splitupDataset/dataset_${++this.maxIndex}.json`,
-      JSON.stringify(Array.from(this.forwardLinksBuffer)),
-      (error) => {
-        if (error) {
-          console.error(error);
-        }
+    const forwardLinks = JSON.stringify(Array.from(this.forwardLinksBuffer));
+    const filePath = `../dataset/splitupDataset/dataset_${++this.maxIndex}.json`;
+    writeFile(filePath, forwardLinks, Crawler.logError);
+  }
+
+  static textMining(el, $, contentData) {
+    $(el).each((_, element) => {
+      const text = $(element).text();
+      contentData.push(text);
+    });
+  }
+
+  static async semaphoreHandling(semaphore, callback) {
+    return await semaphore.acquire().then(async (release) => {
+      try {
+        await callback();
+      } catch (e) {
+        console.error("Error in semaphoreHandling");
+      } finally {
+        release();
       }
-    );
+    });
+  }
+
+  static logErrorFile(error, url = "") {
+    const logFile = `../logs/${Date.now()}-${url.replace(/(^\w+:|^)\/\//, "").replace(/\//g, "-")}.log`;
+    console.error("Some Error Occurred, please check logs for more details: ", logFile);
+    const stringError = String(error);
+    writeFile(logFile, stringError, Crawler.logError);
+  }
+
+  static logError(error = null) {
+    if (error) {
+      console.error(error);
+    }
   }
 }
 
