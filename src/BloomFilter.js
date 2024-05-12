@@ -34,6 +34,10 @@ class BloomFilter extends Base {
     this.construct_filter();
   }
 
+  construct_filter_multiple_files(directory = "dataset/dataset.json") {
+    var files = fs.readdirsync(directory)
+  }
+
   construct_filter(urls = this.urls) {
     console.log(`${styles.head}BloomFilter.construct_filter${styles.res}`);
 
