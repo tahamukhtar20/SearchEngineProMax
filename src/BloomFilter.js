@@ -13,6 +13,15 @@ class BloomFilter extends Base {
     super();
     console.log(`${styles.head}BloomFilter.constructor${styles.res}`);
 
+    var directory = "Dataset/splitupDataset";
+    var files = fs.readdirSync(directory);
+    this.urls = [];
+    files.forEach((file) => {
+      let data = fs.readFileSync(`${directory}/${file}`);
+      let data_arr = JSON.parse(data);
+      this.urls = this.urls.concat(data_arr);
+    });
+
     this.#false_positivity_rate = 0.05;
 
     this.array_size = this.get_array_size(
@@ -32,11 +41,17 @@ class BloomFilter extends Base {
     this.bit_arr = new BitArray(this.array_size);
 
     this.construct_filter();
+    // this.construct_filter_multiple_files();
   }
 
-  construct_filter_multiple_files(directory = "dataset/dataset.json") {
-    var files = fs.readdirsync(directory)
-  }
+  // construct_filter_multiple_files(directory = "Dataset/splitupDataset") {
+  //   var files = fs.readdirSync(directory);
+  //   files.forEach((file) => {
+  //     let data = fs.readFileSync(`${directory}/${file}`);
+  //     let data_arr = JSON.parse(data);
+  //     console.log(data_arr);
+  //   });
+  // }
 
   construct_filter(urls = this.urls) {
     console.log(`${styles.head}BloomFilter.construct_filter${styles.res}`);
@@ -47,7 +62,7 @@ class BloomFilter extends Base {
       console.log("Filter already exists");
       this.read_filter_from_txt();
 
-      console.log("bit_array: ", this.bit_arr.return_bit_array());
+      // console.log("bit_array: ", this.bit_arr.return_bit_array());
       return;
     }
 

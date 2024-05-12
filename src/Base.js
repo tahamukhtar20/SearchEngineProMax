@@ -20,7 +20,7 @@ class Base {
   lastDatasetIndex() {
     console.log("Base.lastDatasetIndex");
     let maxIndex = 0;
-    const files = readdirSync("../dataset/splitupDataset");
+    const files = readdirSync("dataset/splitupDataset");
     files.forEach((file) => {
       const index = parseInt(file.split("_")[1].split(".")[0]);
       if (index > maxIndex) {
@@ -32,12 +32,12 @@ class Base {
 
   static getLemmatizeMap() {
     console.log("Base.getLemmatizeMap");
-    return JSON.parse(readFileSync("../dataset/lemmatizedMap.json", "utf8"));
+    return JSON.parse(readFileSync("dataset/lemmatizedMap.json", "utf8"));
   }
 
   static getTitlesToSkip() {
     console.log("Base.getTitlesToSkip");
-    return JSON.parse(readFileSync("../dataset/titlesToSkip.json", "utf8"));
+    return JSON.parse(readFileSync("dataset/titlesToSkip.json", "utf8"));
   }
 
   requestData() {
@@ -45,10 +45,7 @@ class Base {
     const currIndex = Base.dataCount;
     try {
       const datasetSlice = JSON.parse(
-        readFileSync(
-          `../dataset/splitupDataset/dataset_${currIndex}.json`,
-          "utf8"
-        )
+        readFileSync(`dataset/splitupDataset/dataset_${currIndex}.json`, "utf8")
       );
       Base.dataCount++;
       return datasetSlice;
