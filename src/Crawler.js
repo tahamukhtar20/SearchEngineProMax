@@ -9,12 +9,16 @@ const stopWords = require("stopwords").english;
 const stemmer = natural.PorterStemmer;
 
 const { Base } = require("./Base");
+const { BloomFilter } = require("./BloomFilter");
 const { TimeoutError } = require("puppeteer");
 
 class Crawler extends Base {
   constructor() {
     super();
     console.log("Crawler.contructor");
+
+    this.bFilter = new BloomFilter();
+
     this.concurrentRequests = 30;
     this.completedTasks = 0;
     this.allTasks = 0;
@@ -49,6 +53,7 @@ class Crawler extends Base {
         });
         await Promise.all(currChunk.map((url) => this.crawl(url)));
       }
+      this.bFilter.save_filter_to_txt();
       this.requestData();
     }
 
@@ -150,11 +155,16 @@ class Crawler extends Base {
         forwardLinks.add(baseLink);
         const semaphore = new Semaphore(1);
         await Crawler.semaphoreHandling(semaphore, async () => {
+          // console.log(this.forwardLinksBuffer.size);
           if (this.forwardLinksBuffer.size < 900) return;
           this.writeForwardLinksBuffer();
           this.forwardLinksBuffer.clear();
         });
-        this.forwardLinksBuffer.add(baseLink);
+        // console.log(this.forwardLinksBuffer);
+        if (!this.bFilter.check_filter(baseLink)) {
+          this.forwardLinksBuffer.add(baseLink);
+          this.bFilter.hash_url_to_bit_array(baseLink);
+        }
       } catch (error) {
         if (error instanceof TypeError) return;
         else Crawler.logErrorFile(error, url);
