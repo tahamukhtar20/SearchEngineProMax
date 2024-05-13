@@ -13,7 +13,7 @@ class BloomFilter extends Base {
     super();
     console.log(`${styles.head}BloomFilter.constructor${styles.res}`);
 
-    var directory = "Dataset/splitupDataset";
+    var directory = "../Dataset/splitupDataset";
     var files = fs.readdirSync(directory);
     this.urls = [];
     files.forEach((file) => {
@@ -24,15 +24,9 @@ class BloomFilter extends Base {
 
     this.#false_positivity_rate = 0.05;
 
-    this.array_size = this.get_array_size(
-      this.urls.length,
-      this.#false_positivity_rate
-    );
+    this.array_size = this.get_array_size(this.urls.length, this.#false_positivity_rate);
 
-    this.#hash_functions_count = this.get_hash_count(
-      this.array_size,
-      this.urls.length
-    );
+    this.#hash_functions_count = this.get_hash_count(this.array_size, this.urls.length);
 
     // Temporary
     this.#hash_functions = [this.hash1, this.hash2];
@@ -69,7 +63,7 @@ class BloomFilter extends Base {
     urls.forEach((url) => {
       this.hash_url_to_bit_array(url);
     });
-    console.log("bit_array: ", this.bit_arr.return_bit_array());
+    // console.log("bit_array: ", this.bit_arr.return_bit_array());
     console.log(`${styles.head}Bloom Filter Constructed${styles.res}`);
 
     this.save_filter_to_txt();
@@ -114,8 +108,7 @@ class BloomFilter extends Base {
     var bit_exists = true;
 
     for (let i = 0; i < 2; i++) {
-      bit_exists =
-        bit_exists && this.check_url_in_bit_array(url, this.#hash_functions[i]);
+      bit_exists = bit_exists && this.check_url_in_bit_array(url, this.#hash_functions[i]);
     }
 
     return bit_exists;
@@ -126,9 +119,7 @@ class BloomFilter extends Base {
   }
 
   get_array_size(items_count, false_positive_rate) {
-    return Math.ceil(
-      (-1 * items_count * Math.log(false_positive_rate)) / Math.log(2) ** 2
-    );
+    return Math.ceil((-1 * items_count * Math.log(false_positive_rate)) / Math.log(2) ** 2);
   }
 
   hash1(url, arr_size) {
