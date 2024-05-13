@@ -3,7 +3,7 @@ const BloomFilter = require("./BloomFilter");
 
 // debugger;
 
-const bFilter = new BloomFilter();
+// const bFilter = new BloomFilter();
 const crawler = new Crawler();
 
 crawler.start();

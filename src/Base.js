@@ -41,7 +41,7 @@ class Base {
   }
 
   requestData() {
-    console.log("Base.requestData");
+    console.log(`${styles.head}Base.requestData${styles.res}`);
     const currIndex = Base.dataCount;
     try {
       const datasetSlice = JSON.parse(readFileSync(`../dataset/splitupDataset/dataset_${currIndex}.json`, "utf8"));

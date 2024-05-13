@@ -13,9 +13,10 @@ class BloomFilter extends Base {
     super();
     console.log(`${styles.head}BloomFilter.constructor${styles.res}`);
 
-    var directory = "../Dataset/splitupDataset";
+    var directory = "../dataset/splitupDataset";
     var files = fs.readdirSync(directory);
     this.urls = [];
+
     files.forEach((file) => {
       let data = fs.readFileSync(`${directory}/${file}`);
       let data_arr = JSON.parse(data);
@@ -51,7 +52,7 @@ class BloomFilter extends Base {
     console.log(`${styles.head}BloomFilter.construct_filter${styles.res}`);
 
     // check if the filter is already constructed
-    let filter_path = `dataset/filter.txt`;
+    let filter_path = `../dataset/filter.txt`;
     if (fs.existsSync(filter_path)) {
       console.log("Filter already exists");
       this.read_filter_from_txt();
@@ -72,7 +73,7 @@ class BloomFilter extends Base {
   read_filter_from_txt() {
     console.log(`${styles.head}BloomFilter.read_filter${styles.res}`);
     // read the filter array from a text document
-    let path = `dataset/filter.txt`;
+    let path = `../dataset/filter.txt`;
     let data = fs.readFileSync(path);
     let data_arr = data.toString().split(",");
 
@@ -84,7 +85,7 @@ class BloomFilter extends Base {
   save_filter_to_txt() {
     console.log(`${styles.head}BloomFilter.save_filter${styles.res}`);
     // save the filter array to a text document
-    let path = `dataset/filter.txt`;
+    let path = `../dataset/filter.txt`;
     fs.writeFile(path, this.bit_arr.return_array_values(), (err) => {
       if (err) {
         console.log(err);
@@ -103,14 +104,14 @@ class BloomFilter extends Base {
   }
 
   check_filter(url) {
-    console.log(`${styles.head}BloomFilter.check_filter${styles.res}`);
-
+    console.log(url);
     var bit_exists = true;
 
     for (let i = 0; i < 2; i++) {
       bit_exists = bit_exists && this.check_url_in_bit_array(url, this.#hash_functions[i]);
     }
 
+    console.log(`${styles.head}BloomFilter.check_filter${styles.res} ${bit_exists}`);
     return bit_exists;
   }
 
@@ -130,4 +131,4 @@ class BloomFilter extends Base {
   }
 }
 
-module.exports = BloomFilter;
+module.exports = { BloomFilter };
