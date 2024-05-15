@@ -1,17 +1,11 @@
 const { readFileSync, readdirSync } = require("fs");
 
 // Styling Convention
-<<<<<<< HEAD
-var console_styles = {
-  Reset: "\x1b[0m",
-  Heading: "\x1b[1m\x1b[32m",
-  Url: "\x1b[2m"
-=======
+
 var styles = {
   res: "\x1b[0m",
   head: "\x1b[1m\x1b[32m",
   url: "\x1b[2m"
->>>>>>> bcd4d862904219a3d6b8cd53250f3f3454862c53
 };
 
 class Base {
@@ -51,7 +45,9 @@ class Base {
     console.log(`${styles.head}Base.requestData${styles.res}`);
     const currIndex = Base.dataCount;
     try {
-      const datasetSlice = JSON.parse(readFileSync(`../dataset/splitupDataset/dataset_${currIndex}.json`, "utf8"));
+      const datasetSlice = JSON.parse(
+        readFileSync(`../dataset/splitupDataset/dataset_${currIndex}.json`, "utf8")
+      );
       Base.dataCount++;
       return datasetSlice;
     } catch (e) {
@@ -63,9 +59,5 @@ class Base {
 }
 module.exports = {
   Base,
-<<<<<<< HEAD
-  console_styles
-=======
   styles
->>>>>>> bcd4d862904219a3d6b8cd53250f3f3454862c53
 };
