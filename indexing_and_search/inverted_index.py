@@ -35,6 +35,8 @@ class InvertedIndex:
                 "title": doc["previewTitle"],
                 "description": doc["preview"],
             }
+            
+        
 
 
     def index_docs(self):
@@ -53,8 +55,9 @@ class InvertedIndex:
         for key in self.index:
             self.index[key] = OrderedDict(sorted(self.index[key].items(), key=lambda x: x[1]["tf-idf"], reverse=True))
 
-        with open("./output/index.json", "w") as file:
-            json.dump(self.index, file)
+        # with open("./output/index.json", "w") as file:
+        #     json.dump(self.index, file)
+        return self.index
 
 
     def inverted_index_to_solr_format(self):

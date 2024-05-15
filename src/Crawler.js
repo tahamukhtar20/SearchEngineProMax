@@ -14,17 +14,27 @@ const { load } = require("cheerio");
 const { writeFile } = require("fs");
 const { Semaphore } = require("await-semaphore");
 
+<<<<<<< HEAD
 // tokenizer and stemmer
 const tokenizer = new natural.WordTokenizer();
 const stemmer = natural.PorterStemmer;
+=======
+const { Base } = require("./Base");
+const { BloomFilter } = require("./BloomFilter");
+const { TimeoutError } = require("puppeteer");
+>>>>>>> bcd4d862904219a3d6b8cd53250f3f3454862c53
 
 class Crawler extends Base {
   constructor() {
     super();
     console.log("Crawler.contructor");
 
+<<<<<<< HEAD
     // using puppeteer-extra to add stealth plugin to avoid detection for websites such as Reddit or Twitter
     puppeteer.use(StealthPlugin());
+=======
+    this.bFilter = new BloomFilter();
+>>>>>>> bcd4d862904219a3d6b8cd53250f3f3454862c53
 
     this.concurrentRequests = 30;
     this.completedTasks = 0;
@@ -62,6 +72,14 @@ class Crawler extends Base {
         this.browser = await puppeteer.launch({
           headless: true
         });
+<<<<<<< HEAD
+=======
+        await Promise.all(currChunk.map((url) => this.crawl(url)));
+      }
+      this.bFilter.save_filter_to_txt();
+      this.requestData();
+    }
+>>>>>>> bcd4d862904219a3d6b8cd53250f3f3454862c53
 
         // initiate the crawling process for each URL in the fragment asynchronously
         await Promise.all(datasetSlice.map((url) => this.crawl(url)));
@@ -290,6 +308,7 @@ class Crawler extends Base {
         const baseLink = url.protocol + "//" + url.hostname;
         forwardLinks.add(baseLink);
         const semaphore = new Semaphore(1);
+<<<<<<< HEAD
         if (this.forwardLinksBuffer.size >= 1000) {
           await Crawler.semaphoreHandling(semaphore, async () => {
             this.writeForwardLinksBuffer();
@@ -298,6 +317,19 @@ class Crawler extends Base {
         }
 
         this.forwardLinksBuffer.add(baseLink);
+=======
+        await Crawler.semaphoreHandling(semaphore, async () => {
+          // console.log(this.forwardLinksBuffer.size);
+          if (this.forwardLinksBuffer.size < 900) return;
+          this.writeForwardLinksBuffer();
+          this.forwardLinksBuffer.clear();
+        });
+        // console.log(this.forwardLinksBuffer);
+        if (!this.bFilter.check_filter(baseLink)) {
+          this.forwardLinksBuffer.add(baseLink);
+          this.bFilter.hash_url_to_bit_array(baseLink);
+        }
+>>>>>>> bcd4d862904219a3d6b8cd53250f3f3454862c53
       } catch (error) {
         if (error instanceof TypeError) {
           return;
