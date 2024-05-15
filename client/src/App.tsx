@@ -1,35 +1,66 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import "./App.css";
+import SearchBar from "./components/searchBar";
+import SlideIn from "./components/slideIn";
+
+import { pages, Page } from "./data/pages";
+import { DiVim } from "react-icons/di";
+
+function searchData(searchWords: string) {
+  return pages
+    .filter((page) =>
+      page.keywords.some((keyword) =>
+        keyword.toLowerCase().includes(searchWords)
+      )
+    )
+    .sort((a: Page, b: Page) => {
+      return a.score - b.score;
+    })
+    .slice(0, 5);
+}
+
+interface SearchWord {
+  searchW: string;
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [search, setSearch] = useState("");
+
+  // useEffect(() => {
+  //   console.log(searchData(search));
+  // }, [search]);
+
+  function GetPages({ searchW }: SearchWord) {
+    return searchData(searchW).map((page, idx) => {
+      return (
+        <>
+          <div
+            className="bg-white p-2 hover:bg-gray-300 transition-all duration-300"
+            key={idx}
+          >
+            {page.title}
+          </div>
+        </>
+      );
+    });
+  }
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <section className="border-2 border-black flex flex-col gap-2 items-center justify-center h-screen w-full fixed transition-all duration-700">
+        <SearchBar search={search} setSearch={setSearch} />
+        {search != "" ? (
+          <SlideIn
+            children={
+              <div className="fixed top-[36%] w-[25%] bg-white rounded-xl overflow-clip flex flex-col gap-1">
+                <GetPages searchW={search} />
+              </div>
+            }
+          ></SlideIn>
+        ) : null}
+      </section>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
