@@ -9,4 +9,4 @@ indexing_and_search/output/*.json
 # ignore node modules anywhere in the project
 node_modules/
 
-# __pycache__/
+__pycache__/
