@@ -56,3 +56,21 @@ class InvertedIndex:
         with open("./output/index.json", "w") as file:
             json.dump(self.index, file)
 
+
+    def inverted_index_to_solr_format(self):
+        data = {}
+        with open("./output/index.json", "r") as file:
+            data = json.load(file)
+        solr_data = []
+        for word, docs in data.items():
+            for doc in docs:
+                solr_data.append({
+                    "id": f"{word}_{doc}",
+                    "word": word,
+                    "url": doc["url"],
+                    "title": doc["title"],
+                    "description": doc["description"],
+                    "tf-idf": doc["tf-idf"]
+                })
+        with open("./output/solr_index.json", "w") as file:
+            json.dump(solr_data, file)

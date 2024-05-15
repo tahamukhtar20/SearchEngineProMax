@@ -4,7 +4,7 @@ const { readFileSync, readdirSync } = require("fs");
 var console_styles = {
   Reset: "\x1b[0m",
   Heading: "\x1b[1m\x1b[32m",
-  Url: "\x1b[2m",
+  Url: "\x1b[2m"
 };
 
 class Base {
@@ -44,12 +44,7 @@ class Base {
     console.log("Base.requestData");
     const currIndex = Base.dataCount;
     try {
-      const datasetSlice = JSON.parse(
-        readFileSync(
-          `../dataset/splitupDataset/dataset_${currIndex}.json`,
-          "utf8"
-        )
-      );
+      const datasetSlice = JSON.parse(readFileSync(`../dataset/splitupDataset/dataset_${currIndex}.json`, "utf8"));
       Base.dataCount++;
       return datasetSlice;
     } catch (e) {
@@ -61,5 +56,5 @@ class Base {
 }
 module.exports = {
   Base,
-  console_styles,
+  console_styles
 };
