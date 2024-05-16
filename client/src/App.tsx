@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
 import "./App.css";
 import SearchBar from "./components/searchBar";
 import SlideIn from "./components/slideIn";
 
 import { pages, Page } from "./data/pages";
-import { DiVim } from "react-icons/di";
+
+import { useState } from "react";
 
 function searchData(searchWords: string) {
   return pages
