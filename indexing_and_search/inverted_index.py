@@ -35,16 +35,16 @@ class InvertedIndex:
                 "title": doc["previewTitle"],
                 "description": doc["preview"],
             }
-            
-        
-
 
     def index_docs(self):
         docs = os.listdir(self.documents_path)
         doc_count = len(docs)
         for file in tqdm(docs, total=doc_count):
             with open(os.path.join(self.documents_path, file), "r") as file:
-                self.index_doc(json.load(file))
+                try:
+                    self.index_doc(json.load(file))
+                except Exception as e:
+                    continue # sample.txt skipped here
 
         for word, docs in self.index.items():
             idf = math.log(doc_count / len(docs))
@@ -55,8 +55,8 @@ class InvertedIndex:
         for key in self.index:
             self.index[key] = OrderedDict(sorted(self.index[key].items(), key=lambda x: x[1]["tf-idf"], reverse=True))
 
-        # with open("./output/index.json", "w") as file:
-        #     json.dump(self.index, file)
+        with open("./output/index.json", "w") as file:
+            json.dump(self.index, file)
         return self.index
 
 
@@ -65,15 +65,16 @@ class InvertedIndex:
         with open("./output/index.json", "r") as file:
             data = json.load(file)
         solr_data = []
-        for word, docs in data.items():
-            for doc in docs:
+        for word, docs in tqdm(data.items()):
+            for url, content in docs.items():
                 solr_data.append({
-                    "id": f"{word}_{doc}",
+                    "id": f"{word}_{content['url']}_{round(content['tf-idf'], 8)}",
                     "word": word,
-                    "url": doc["url"],
-                    "title": doc["title"],
-                    "description": doc["description"],
-                    "tf-idf": doc["tf-idf"]
+                    "url": url,
+                    "title": content["title"],
+                    "description": content["description"],
+                    "tf-idf": content["tf-idf"]                
                 })
+
         with open("./output/solr_index.json", "w") as file:
             json.dump(solr_data, file)

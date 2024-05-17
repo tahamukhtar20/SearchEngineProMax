@@ -10,3 +10,6 @@ indexing_and_search/output/*.json
 node_modules/
 
 __pycache__/
+
+sample.txt
+
