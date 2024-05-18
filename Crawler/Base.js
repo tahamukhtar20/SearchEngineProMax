@@ -1,4 +1,4 @@
-const { readFileSync, readdirSync } = require("fs");
+const { readFileSync, readdirSync, existsSync, mkdirSync } = require("fs");
 
 const CONFIG = require("./config");
 
@@ -14,6 +14,14 @@ class Base {
   static dataCount = 0;
   constructor() {
     console.log("Base.contructor");
+
+    if (!existsSync(CONFIG.outputDIR)) {
+      mkdirSync(CONFIG.outputDIR);
+    }
+    if (!existsSync(CONFIG.logDIR)) {
+      mkdirSync(CONFIG.logDIR);
+    }
+
     this.urls = this.requestData();
     this.maxIndex = this.lastDatasetIndex();
     this.titlesToSkip = Base.getTitlesToSkip();

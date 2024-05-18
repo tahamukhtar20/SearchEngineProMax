@@ -13,7 +13,7 @@ const natural = require("natural");
 const stopWords = require("stopwords").english;
 const { readFileSync } = require("fs");
 const { load } = require("cheerio");
-const { writeFile } = require("fs");
+const { writeFile, existsSync, mkdirSync } = require("fs");
 const { Semaphore } = require("await-semaphore");
 
 // tokenizer and stemmer
@@ -360,7 +360,7 @@ class Crawler extends Base {
    */
   async saveContent(content) {
     console.log("Crawler.save");
-    const fileName = `../output/${this.completedTasks}.json`;
+    const fileName = `${CONFIG.outputDIR}/${this.completedTasks}.json`;
     const stringContent = JSON.stringify(content);
     writeFile(fileName, stringContent, Crawler.logError);
   }

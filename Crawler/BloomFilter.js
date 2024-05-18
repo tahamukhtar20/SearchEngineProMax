@@ -123,11 +123,16 @@ class BloomFilter extends Base {
   check_url_in_bit_array(url, hash_function) {
     return this.bit_arr.get_bit(hash_function(url, this.array_size));
   }
-
+  /**
+   * Checks if a URL exists in the BitArray.
+   *
+   * @param {string} url URL to check in BitArray
+   * @returns True if URL exists in BitArray else false
+   */
   check_filter(url) {
     console.log(url);
     var bit_exists = true;
-
+    // Check for each hash function
     for (let i = 0; i < 2; i++) {
       bit_exists = bit_exists && this.check_url_in_bit_array(url, this.hash_functions[i]);
     }
@@ -135,18 +140,43 @@ class BloomFilter extends Base {
     console.log(`${styles.head}BloomFilter.check_filter${styles.res} ${bit_exists}`);
     return bit_exists;
   }
-
+  /**
+   * Returns the suitable number of hash functions.
+   *
+   * @param {number} array_size Size of BitArray
+   * @param {number} item_count Number of URLS (items) to be hashed
+   * @returns The suitable number of hash functions for the BitArray
+   */
   get_hash_count(array_size, item_count) {
     return Math.ceil((array_size / item_count) * Math.log(2));
   }
-
+  /**
+   * Checks the fp rate and items and returns appropriate filter size.
+   *
+   * @param {number} items_count The number of URLS to be stored in the BitArray
+   * @param {number} false_positive_rate The acceptable false positive rate
+   * @returns Appropriate length of filter array
+   */
   get_array_size(items_count, false_positive_rate) {
     return Math.ceil((-1 * items_count * Math.log(false_positive_rate)) / Math.log(2) ** 2);
   }
-
+  /**
+   * Returns the Bit Index where URL needs to be stored.
+   *
+   * @param {string} url URL to be hashed
+   * @param {number} arr_size Size of Filter Array
+   * @returns Bit Index of URL
+   */
   hash1(url, arr_size) {
     return Math.ceil(Number(murmur.murmur3(url, 0)) % arr_size);
   }
+  /**
+   * Returns the Bit Index where URL needs to be stored.
+   *
+   * @param {string} url URL to be hashed
+   * @param {number} arr_size Size of Filter Array
+   * @returns Bit Index of URL
+   */
   hash2(url, arr_size) {
     return Math.ceil(Number(murmur.murmur2(url, 0)) % arr_size);
   }
