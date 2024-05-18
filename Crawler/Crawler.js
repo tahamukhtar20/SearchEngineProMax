@@ -280,7 +280,7 @@ class Crawler extends Base {
       try {
         const url = new URL(href);
         if (
-          includedPrefixes.some((prefix) => !href.startsWith(prefix)) ||
+          !includedPrefixes.some((prefix) => href.startsWith(prefix)) ||
           href.startsWith("#") ||
           href.startsWith("/") ||
           excludedHostnames.has(url.hostname)
