@@ -10,7 +10,7 @@ DOC_WEIGHT = 1
 class InvertedIndex:
     def __init__(self):
         self.index = defaultdict(lambda: defaultdict(dict))
-        self.documents_path = "../output"
+        self.documents_path = "../Crawler/output"
 
     def __repr__(self):
         return str(self.index)

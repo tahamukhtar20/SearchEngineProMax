@@ -2,7 +2,7 @@
 *.log
 
 # ignore folder
-output/*.json
+Crawler/output/*.json
 
 indexing_and_search/output/*.json
 
@@ -13,3 +13,5 @@ __pycache__/
 
 sample.txt
 
+
+notebooks/Bert/uncased_L-12_H-768_A-12
