@@ -13,5 +13,4 @@ __pycache__/
 
 sample.txt
 
-
-notebooks/Bert/uncased_L-12_H-768_A-12
+Flask/bert-base-uncased
