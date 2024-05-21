@@ -24,10 +24,10 @@ app.post("/fetch", async (req, res) => {
   const query = processText(params.q);
 
   params.q = query;
-  params.bq = `${query
-    .split(" ")
-    .map((term) => `${term}`)
-    .join(" AND ")}^2.0`;
+  // params.bq = `${query
+  //   .split(" ")
+  //   .map((term) => `${term}`)
+  //   .join(" AND ")}^2.0`;
 
   Object.keys(params).forEach((key) =>
     url.searchParams.append(key, params[key])
@@ -38,10 +38,11 @@ app.post("/fetch", async (req, res) => {
   }
 
   try {
+    // console.log(url);
     const response = await axios.get(url);
     res.json(response.data);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch the URL" });
+    res.status(500).json({ err: `Failed to fetch the URL ${error}` });
   }
 });
 

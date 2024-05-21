@@ -1,4 +1,5 @@
 from flask import Flask, request
+from flask_cors import CORS
 import os
 from dotenv import dotenv_values
 import json
@@ -6,6 +7,7 @@ import json
 from embed import compute_embeddings, compute_cosine_similarity
 
 app = Flask(__name__)
+cors = CORS(app)
 # Load the config
 config = dotenv_values("./.env")
 # print(config)
@@ -26,6 +28,10 @@ def sort_func(result):
 def search():
     # compute search embeddings
     searchWord = request.args.get('search')
+    
+    if searchWord is None:
+         return "Please specify a valid word", 500
+
     searchEmbeddings = compute_embeddings(searchWord)['mean']
     
     if not os.path.exists(config['search-DIR']):
@@ -41,8 +47,8 @@ def search():
         if score_embed1 > sim_thresh or score_embed2 > sim_thresh:
             results.append({
                 "url":file_data['url'],
-                "previewTitle":file_data['previewTitle'],
-                "preview":file_data['preview'],
+                "title":file_data['previewTitle'],
+                "description":file_data['preview'],
                 "score_embed1":score_embed1,
                 "score_embed2":score_embed2
             })
