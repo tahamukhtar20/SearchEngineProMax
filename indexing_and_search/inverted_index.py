@@ -3,14 +3,17 @@ import os
 import math
 from tqdm import tqdm
 import json
+from dotenv import dotenv_values
 
 HEADINGS_WEIGHT = 1.2
 DOC_WEIGHT = 1
 
+config = dotenv_values(".env")
+
 class InvertedIndex:
     def __init__(self):
         self.index = defaultdict(lambda: defaultdict(dict))
-        self.documents_path = "../Crawler/output"
+        self.documents_path = f"{config['SCRAPED_DATA_DIR']}"
 
     def __repr__(self):
         return str(self.index)
@@ -32,8 +35,8 @@ class InvertedIndex:
             self.index[word][doc["url"]] = {
                 "tf": (count / total_doc_word_count) * (HEADINGS_WEIGHT if heading_word else DOC_WEIGHT),
                 "url": doc["url"],
-                "title": doc["previewTitle"],
-                "description": doc["preview"],
+                "previewTitle": doc["previewTitle"],
+                "preview": doc["preview"],
             }
 
     def index_docs(self):
@@ -54,8 +57,9 @@ class InvertedIndex:
 
         for key in self.index:
             self.index[key] = OrderedDict(sorted(self.index[key].items(), key=lambda x: x[1]["tf-idf"], reverse=True))
-
-        with open("./output/index.json", "w") as file:
+        if not os.path.exists(f"{config['TF_IDF_OUTPUT_DIR']}"):
+            os.makedirs(config['TF_IDF_OUTPUT_DIR'])
+        with open(f"{config['TF_IDF_OUTPUT_DIR']}/index.json", "w") as file:
             json.dump(self.index, file)
         return self.index
 
@@ -71,8 +75,8 @@ class InvertedIndex:
                     "id": f"{word}_{content['url']}_{round(content['tf-idf'], 8)}",
                     "word": word,
                     "url": url,
-                    "title": content["title"],
-                    "description": content["description"],
+                    "previewTitle": content["previewTitle"],
+                    "preview": content["preview"],
                     "tf-idf": content["tf-idf"]                
                 })
 

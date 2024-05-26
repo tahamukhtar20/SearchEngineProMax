@@ -47,8 +47,8 @@ def search():
         if score_embed1 > sim_thresh or score_embed2 > sim_thresh:
             results.append({
                 "url":file_data['url'],
-                "title":file_data['previewTitle'],
-                "description":file_data['preview'],
+                "previewTitle":file_data['previewTitle'],
+                "preview":file_data['preview'],
                 "score_embed1":score_embed1,
                 "score_embed2":score_embed2
             })

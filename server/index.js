@@ -10,7 +10,7 @@ const stopWords = require("stopwords").english;
 const { lemmaitizedMap } = require("./lemmatizedMap");
 
 const app = express();
-const port = 3000;
+const port = 50001;
 
 app.use(cors("*"));
 app.use(express.json());
